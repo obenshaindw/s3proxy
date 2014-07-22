@@ -5,6 +5,7 @@ from flask import stream_with_context
 from werkzeug.datastructures import Headers
 from werkzeug.contrib.cache import SimpleCache
 from boto.s3.connection import S3Connection
+from boto.s3.connection import OrdinaryCallingFormat
 from boto.s3.key import Key
 import argparse
 import yaml
@@ -86,7 +87,8 @@ if __name__ == '__main__':
 
     # load AWS credentials and bucket
     config = yaml.load(open(args.config,'r'))
-    conn = S3Connection(config["AWS_ACCESS_KEY_ID"], config["AWS_SECRET_ACCESS_KEY"])
+    #conn = S3Connection(config["AWS_ACCESS_KEY_ID"], config["AWS_SECRET_ACCESS_KEY"])
+    conn = S3Connection(config["AWS_ACCESS_KEY_ID"], config["AWS_SECRET_ACCESS_KEY"], calling_format=OrdinaryCallingFormat())
     bucket = conn.get_bucket(config["bucket_name"])
 
     # Load the rewrite rules:
