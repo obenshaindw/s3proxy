@@ -42,7 +42,8 @@ def head_file(url):
     headers = Headers()
 
     m = re.search('^.*s3.amazonaws.com\/([a-zA-Z0-9_\-\.]+)\/(.*)$', url)
-    print ('[HEAD] - Bucket Name:'+m.group(1)+' Path:'+m.group(2)) if debug
+    if args.debug:
+        print ('[HEAD] - Bucket Name:'+m.group(1)+' Path:'+m.group(2))
 
     S3Key = get_S3Key(url)
     try:
@@ -60,7 +61,8 @@ def get_file(url):
     return_headers = Headers()
 
     m = re.search('^.*s3.amazonaws.com\/([a-zA-Z0-9_\-\.]+)\/(.*)$', url)
-    print ('[GET] - Bucket Name:'+m.group(1)+' Path:'+m.group(2)) if deubg
+    if args.debug:
+        print ('[GET] - Bucket Name:'+m.group(1)+' Path:'+m.group(2)) if deubg
 
     S3Key = get_S3Key(url)
     try:
@@ -76,7 +78,8 @@ def get_file(url):
           m = re.search('^.*=([0-9]+)\-', range_header)
           start_range = int(m.group(1))
           end_range = int(size -1)
-        print('start:'+str(start_range)+' end:'+str(end_range)+' size:'+str(size)) if debug
+        if args.debug:
+            print('start:'+str(start_range)+' end:'+str(end_range)+' size:'+str(size))
         get_headers = {'Range' : "bytes=%d-%d" % (start_range, end_range)}
         return_headers.add('Accept-Ranges', 'bytes')
         return_headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(start_range, end_range, size))
