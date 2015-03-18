@@ -25,18 +25,25 @@ def apply_rewrite_rules(input_str):
 def get_S3Key(url):
     S3Key = cache.get(url)
     if S3Key is None:
-        S3Key = bucket.lookup("/" + url)
+        m = re.search('^.*s3.amazonaws.com\/([a-zA-Z0-9_\-\.]+)\/(.*)$', url)
+        bucket_name = m.group(1)
+        bucket = conn.get_bucket(bucket_name)
+        S3Key = bucket.lookup("/" + m.group(2))
         try:
             size = S3Key.size
         except:
             return None
-        cache.set(url, S3Key, timeout=5 * 60)
+        #cache.set(url, S3Key, timeout=5 * 60)
     return S3Key
 
 @app.route('/files/<path:url>', methods=["HEAD"])
 def head_file(url):
     url = apply_rewrite_rules(url)
     headers = Headers()
+
+    m = re.search('^.*s3.amazonaws.com\/([a-zA-Z0-9_\-\.]+)\/(.*)$', url)
+    print ('[HEAD] - Bucket Name:'+m.group(1)+' Path:'+m.group(2)) if debug
+
     S3Key = get_S3Key(url)
     try:
         size = S3Key.size
@@ -49,7 +56,12 @@ def head_file(url):
 def get_file(url):
     url = apply_rewrite_rules(url)
     range_header = request.headers.get('Range', None)
+
     return_headers = Headers()
+
+    m = re.search('^.*s3.amazonaws.com\/([a-zA-Z0-9_\-\.]+)\/(.*)$', url)
+    print ('[GET] - Bucket Name:'+m.group(1)+' Path:'+m.group(2)) if deubg
+
     S3Key = get_S3Key(url)
     try:
         size = S3Key.size
@@ -58,7 +70,13 @@ def get_file(url):
 
     if range_header:
         print "%s: %s (size=%d)" % (url, range_header, size)
-        start_range, end_range = [int(x) for x in range_header.split("=")[1].split("-")]
+        try:
+          start_range, end_range = [int(x) for x in range_header.split("=")[1].split("-")]
+        except:
+          m = re.search('^.*=([0-9]+)\-', range_header)
+          start_range = int(m.group(1))
+          end_range = int(size -1)
+        print('start:'+str(start_range)+' end:'+str(end_range)+' size:'+str(size)) if debug
         get_headers = {'Range' : "bytes=%d-%d" % (start_range, end_range)}
         return_headers.add('Accept-Ranges', 'bytes')
         return_headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(start_range, end_range, size))
@@ -87,9 +105,7 @@ if __name__ == '__main__':
 
     # load AWS credentials and bucket
     config = yaml.load(open(args.config,'r'))
-    #conn = S3Connection(config["AWS_ACCESS_KEY_ID"], config["AWS_SECRET_ACCESS_KEY"])
     conn = S3Connection(config["AWS_ACCESS_KEY_ID"], config["AWS_SECRET_ACCESS_KEY"], calling_format=OrdinaryCallingFormat())
-    bucket = conn.get_bucket(config["bucket_name"])
 
     # Load the rewrite rules:
     for name, rule in config.get("rewrite_rules", {}).iteritems():

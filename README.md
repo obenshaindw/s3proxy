@@ -3,13 +3,13 @@
 S3proxy is a simple flask-based REST web application which can expose files (keys) stored in the AWS Simple Storage Service (S3) via a simple REST api. 
 
 ### What does this do?
-S3proxy takes a set of AWS credentials and an S3 bucket name and provides GET and HEAD endpoints on the files within the bucket. It uses the [boto][boto] library for internal access to S3. For example, if your bucket has the following file:
+S3proxy takes a set of AWS credentials and an S3 location and provides GET and HEAD endpoints to that location. It uses the [boto][boto] library for internal access to S3. For example, if your bucket has the following file:
 
     s3://mybucket/examples/path/to/myfile.txt
 
 then running S3proxy on a localhost server (port 5000) would enable you read (GET) this file at:
 
-	http://localhost:5000/files/examples/path/to/myfile.txt
+	http://localhost:5000/files/s3.amazonaws.com/mybucket/examples/path/to/myfile.txt
 
 Support exists in S3proxy for the `byte-range` header in a GET request. This means that the API can provide arbitrary parts of S3 files if requested/supported by the application making the GET request.
 
@@ -17,6 +17,8 @@ Support exists in S3proxy for the `byte-range` header in a GET request. This mea
 S3proxy simplifies access to private S3 objects. While S3 already provides [a complete REST API][s3_api], this API requires signed authentication headers or parameters that are not always obtainable within existing applications (see below), or overly complex for simple development/debugging tasks.
 
 In fact, however, S3proxy was specifically designed to provide a compatability layer for viewing DNA sequencing data in(`.bam` files) using [IGV][igv]. While IGV already includes an interface for reading bam files from an HTTP endpoint, it does not support creating signed requests as required by the AWS S3 API (IGV does support HTTP Basic Authentication, a feature that I would like to include in S3proxy in the near future). Though it is in principal possible to provide a signed AWS-compatible URL to IGV, IGV will still not be able to create its own signed URLs necessary for accessing `.bai` index files, usually located in the same directory as the `.bam` file. Using S3proxy you can expose the S3 objects via a simplified HTTP API which IGV can understand and access directly.
+
+S3Proxy also supports other bioinformatics tools like samtools and tabix that allow users to fetch a region of interest.  This is much faster than downloading the entire BAM file.
 
 This project is in many ways similar to [S3Auth][s3auth], a hosted service which provides a much more complete API to a private S3 bucket. I wrote S3proxy as a faster, simpler solution-- and because S3Auth requires a domain name and access to the `CNAME` record in order to function. If you want a more complete API (read: more than just GET/HEAD at the moment) should check them out!
 
@@ -36,12 +38,11 @@ To run S3proxy, you will need:
    - An Amazon AWS account and keys with appropriate S3 access
 
 #### Installation/Configuration
-At the moment, there is no installation. Simply put your AWS keys and bucket name into the config.yaml file:
+At the moment, there is no installation. Simply put your AWS keys into the config.yaml file:
 
 ```yaml
 AWS_ACCESS_KEY_ID: ''
 AWS_SECRET_ACCESS_KEY: ''
-bucket_name: ''
 ```
 
 You may also optionally specify a number of "rewrite" rules. These are simple pairs of a regular expression and a replacement string which can be used to internally redirect (Note, the API does not actually currently send a REST 3XX redirect header) file paths. The example in the config.yaml file reads:
@@ -57,7 +58,7 @@ rewrite_rules:
 
 If you do not wish to use any rewrite_rules, simply leave this commented out.
 
-#### Running S3cmd:
+#### Running S3Proxy:
 Once you have filled out the config.yaml file, you can test out S3proxy simply by running on the command line:
 
     python app.py
@@ -81,6 +82,7 @@ S3proxy should not be used in production-level or open/exposed servers! There is
 [pyyaml]: http://pyyaml.org/wiki/PyYAML
 [s3_api]: http://docs.aws.amazon.com/AmazonS3/latest/API/APIRest.html
 [igv]: http://www.broadinstitute.org/igv/home
+[samtools]: http://www.htslib.org/
 [wsgi_server]: http://flask.pocoo.org/docs/deploying/
 [iam_roles]: http://aws.amazon.com/iam/
 [simplecache]: http://flask.pocoo.org/docs/patterns/caching/
