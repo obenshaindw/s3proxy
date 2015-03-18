@@ -62,7 +62,7 @@ def get_file(url):
 
     m = re.search('^.*s3.amazonaws.com\/([a-zA-Z0-9_\-\.]+)\/(.*)$', url)
     if args.debug:
-        print ('[GET] - Bucket Name:'+m.group(1)+' Path:'+m.group(2)) if deubg
+        print ('[GET] - Bucket Name:'+m.group(1)+' Path:'+m.group(2))
 
     S3Key = get_S3Key(url)
     try:
